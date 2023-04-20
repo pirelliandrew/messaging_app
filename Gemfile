@@ -42,6 +42,10 @@ gem "tzinfo-data", platforms: %i[ mingw mswin x64_mingw jruby ]
 # Reduces boot times through caching; required in config/boot.rb
 gem "bootsnap", require: false
 
+# For separating business logic from Model and Controller layers
+# Allows for conveniently simulating API behavior through the Rails console
+gem 'active_interaction', '~> 5.2'
+
 # Use Sass to process CSS
 # gem "sassc-rails"
 
@@ -51,6 +55,8 @@ gem "bootsnap", require: false
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
   gem "debug", platforms: %i[ mri mingw x64_mingw ]
+  # My preferred Ruby testing framework
+  gem 'rspec-rails'
 end
 
 group :development do
@@ -62,6 +68,9 @@ group :development do
 
   # Speed up commands on slow machines / big apps [https://github.com/rails/spring]
   # gem "spring"
+
+  # Linting
+  gem "rubocop"
 end
 
 group :test do
