@@ -78,4 +78,6 @@ group :test do
   gem "capybara"
   gem "selenium-webdriver"
   gem "webdrivers"
+  # For testing model validations
+  gem 'shoulda-matchers'
 end
