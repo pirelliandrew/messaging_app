@@ -10,6 +10,7 @@ This application consists of three API endpoints:
 * Ruby 3.2.2
 * Git
 * Bundler version 2.4.10
+* [ngrok](https://ngrok.com/docs/getting-started/)
 
 ## Setup
 ```bash
@@ -21,7 +22,10 @@ bundle exec rails db:setup
 
 ## Running the application
 ```bash
+# In first terminal
 bundle exec rails s
+# In second terminal
+TODO: ngrok command
 ```
 
 Application is accessible at http://localhost:3000/.
@@ -30,6 +34,8 @@ Application is accessible at http://localhost:3000/.
 My preferred testing strategy is Behavior-Driven Development (BDD). If you have an hour to spare, I would strongly recommend watching [this Youtube video by Ian Cooper](https://www.youtube.com/watch?v=vOO3hulIcsY&ab_channel=NDCConferences) to get familiar with BDD. If you have 20 hours to spare, I would recommend reading [Test Driven Development by Kent Beck](https://www.amazon.com/Test-Driven-Development-Kent-Beck/dp/0321146530) to get very familiar with BDD.
 
 As per BDD, all tests were written at the system level, in this case the API layer, in order to validate that the feature behave as intended and will continue to behave as intended should the codebase change in the future.
+
+The only exception is that I also added tests for the model validations as it can prove impractical to test all data validations from the API layer over time and data integrity is critical.
 
 Generally I would prefer to use fixturing framework such as [factory_bot](https://github.com/thoughtbot/factory_bot_rails) for simple and consistent creation of database records in test environments, but have not added it to this project yet in order to save time.
 
@@ -106,7 +112,7 @@ Visit http://localhost:3000/list_messages in your browser.
 TODO: Image
 
 ## Client Library Examples
-Due to encapsulating all the business logic inside [Active Interactions](https://github.com/AaronLasseigne/active_interaction), all the APIs can be triggered from the Rails console, acting as a pseudo client library.
+Due to encapsulating all the business logic inside [Active Interactions](https://github.com/AaronLasseigne/active_interaction), all the APIs can be triggered from the Rails console, acting as a pseudo client library when running the application locally.
 
 The Rails console can be started using:
 ```bash
@@ -150,7 +156,7 @@ message_id uniqueness is only enforced on a per provider basis as providers will
 
 The text of messages is not stored in the database as it is sensitive user data. In practice, it may be best to generate an idempotency key based on an obfuscated version of the message text and phone number in order to avoid duplicate text messages being sent to the same phone number within in a short period of time.
 
-The state is used by a state machine in the Message model which allows the following state transitions:
+The state is used by a [state machine](https://github.com/aasm/aasm) in the Message model which allows the following state transitions:
 1. pending -> sending
 2. sending -> delivered
 3. sending -> failed

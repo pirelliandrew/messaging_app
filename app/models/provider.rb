@@ -9,10 +9,8 @@ class Provider < ApplicationRecord
   validate :validate_url_format
 
   def send_text_message(message)
-    # 6. Increment load balance count for provider
     Provider.update_counters(id, call_count: 1)
 
-    # 7. Call SMS provider API with phone number and message
     response = HTTParty.post(
       url,
       headers: { 'Content-Type' => 'application/json' },

@@ -8,9 +8,10 @@ RSpec.describe Provider, type: :model do
   describe 'validations' do
     it { expect(subject).to validate_presence_of(:url) }
     it { expect(subject).to validate_uniqueness_of(:url) }
+    it { expect(subject).to validate_numericality_of(:call_count).is_greater_than_or_equal_to(0) }
     it { expect(subject).to validate_presence_of(:call_ratio) }
     it {
-      expect(subject).to validate_numericality_of(:call_ratio).is_greater_or_equal_to(0).is_less_than_or_equal_to(100)
+      expect(subject).to validate_numericality_of(:call_ratio).is_greater_than_or_equal_to(0).is_less_than_or_equal_to(100)
     }
 
     it 'validates the format of url' do

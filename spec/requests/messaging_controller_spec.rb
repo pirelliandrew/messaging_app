@@ -41,7 +41,7 @@ RSpec.describe 'MessagingControllers', type: :request do
             body: {
               to_number: '1234567890',
               message: 'test message text',
-              callback_url: 'https://example.com/callback'
+              callback_url: 'https://example.com/delivery_status'
             }.to_json
           )
         end
@@ -98,7 +98,7 @@ RSpec.describe 'MessagingControllers', type: :request do
             body: {
               to_number: '1234567890',
               message: 'test message text',
-              callback_url: 'https://example.com/callback'
+              callback_url: 'https://example.com/delivery_status'
             }.to_json
           )
         end
