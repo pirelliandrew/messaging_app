@@ -1,6 +1,32 @@
+# frozen_string_literal: true
+
+require 'httparty'
+
 class Provider < ApplicationRecord
+  validates :call_count, numericality: { greater_than_or_equal_to: 0 }
+  validates :call_ratio, presence: true, numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 100 }
   validates :url, presence: true, uniqueness: true
   validate :validate_url_format
+
+  def send_text_message(message)
+    # 6. Increment load balance count for provider
+    Provider.update_counters(id, call_count: 1)
+
+    # 7. Call SMS provider API with phone number and message
+    response = HTTParty.post(
+      url,
+      headers: { 'Content-Type' => 'application/json' },
+      body: {
+        to_number: message.phone.number,
+        message: message.text,
+        callback_url: 'https://example.com/callback'
+      }.to_json
+    )
+
+    response.raise_error unless response.ok?
+
+    response.parsed_response['message_id']
+  end
 
   private
 
@@ -8,8 +34,8 @@ class Provider < ApplicationRecord
     return if url.blank?
 
     uri = URI.parse(url)
-    errors.add(:url, "is not a valid URL") unless uri.is_a?(URI::HTTP)
+    errors.add(:url, 'is not a valid URL') unless uri.is_a?(URI::HTTP)
   rescue URI::InvalidURIError
-    errors.add(:url, "is not a valid URL")
+    errors.add(:url, 'is not a valid URL')
   end
 end

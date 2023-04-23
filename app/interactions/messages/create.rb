@@ -1,17 +1,18 @@
 # frozen_string_literal: true
 
-module Message
+module Messages
   class Create < ActiveInteraction::Base
-    string :phone_number, :message_text
+    string :phone_number, :message
+    integer :response_status, default: 400
 
-    attr_accessor :response_status, :message
+    attr_accessor :response_status
 
-    validates :phone_number, :message_text,
+    validates :phone_number, :message,
               presence: true
 
     def execute
       # 1. Retrieve or create Phone record for given phone number
-      phone = Phone.find_by(phone_number:) || compose(Phone::Create, phone_number:)
+      phone = Phone.find_by(number: phone_number) || compose(Phones::Create, phone_number:)
 
       return if errors.present?
 
@@ -22,11 +23,11 @@ module Message
         return
       end
 
-      send_message_with_retry
+      message_attempt = send_message_with_retry(phone)
 
-      unless message.sending?
+      unless message_attempt.sending?
         response_status = 503
-        errors.add(:provider, 'All messaging providers are currently unavailable')
+        errors.add(:all_messaging_providers, 'are currently unavailable')
         return
       end
 
@@ -35,22 +36,26 @@ module Message
 
     private
 
-    def send_message_with_retry
+    def send_message_with_retry(phone)
       # 10. Create Message record for given Phone with pending status and message id from response
-      message = Message.new(phone:)
+      message_attempt = Message.new(phone:)
+      message_attempt.text = message
       provider_count = Provider.count
       failed_attempts = 0
       failed_providers = []
+
       while failed_attempts < provider_count
         begin
-          message.provider = compose(Provider::Select, failed_providers:)
-          message.send_text(message_text)
+          message_attempt.provider = compose(Providers::Select, failed_providers:)
+          message_attempt.send_text!
           break
         rescue HTTParty::ResponseError
-          failed_providers << message.provider
+          failed_providers << message_attempt.provider
           failed_attempts += 1
         end
       end
+
+      message_attempt
     end
   end
 end

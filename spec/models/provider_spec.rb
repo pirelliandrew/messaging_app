@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'rails_helper'
 
 RSpec.describe Provider, type: :model do
@@ -6,6 +8,10 @@ RSpec.describe Provider, type: :model do
   describe 'validations' do
     it { expect(subject).to validate_presence_of(:url) }
     it { expect(subject).to validate_uniqueness_of(:url) }
+    it { expect(subject).to validate_presence_of(:call_ratio) }
+    it {
+      expect(subject).to validate_numericality_of(:call_ratio).is_greater_or_equal_to(0).is_less_than_or_equal_to(100)
+    }
 
     it 'validates the format of url' do
       expect(subject).to allow_value('http://www.example.com').for(:url)

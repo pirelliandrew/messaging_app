@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 Rails.application.routes.draw do
   post 'send_message', to: 'messaging#create'
   post 'delivery_status', to: 'messaging#update'
