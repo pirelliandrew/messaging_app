@@ -24,14 +24,15 @@ module Messages
         return
       end
 
-      if status == 'delivered'
+      case status
+      when 'delivered'
         message.mark_delivered!
-      elsif status == 'failed'
+      when 'failed'
         message.mark_failed!
-      elsif status == 'invalid'
+      when 'invalid'
         message.mark_blacklisted!
       else
-        errors.add(:status, 'has an invalid value')
+        errors.add(:status, 'has an unsupported value')
         return
       end
 

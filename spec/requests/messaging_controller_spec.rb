@@ -247,11 +247,11 @@ RSpec.describe 'MessagingControllers', type: :request do
   describe 'POST /delivery_status' do
     subject { post '/delivery_status', params: { message_id:, status: } }
 
-    shared_examples "a 200 response" do
-      it "updates the status of the message" do
+    shared_examples 'a 200 response' do
+      it 'updates the status of the message' do
         expect { subject }
           .to change { message.reload.state }
-          .from("sending")
+          .from('sending')
           .to(expected_state)
       end
 
@@ -259,7 +259,7 @@ RSpec.describe 'MessagingControllers', type: :request do
         subject
 
         expect(response).to have_http_status(200)
-        expect(response.body).to include("Message successfully updated")
+        expect(response.body).to include('Message successfully updated')
       end
     end
 
@@ -281,82 +281,82 @@ RSpec.describe 'MessagingControllers', type: :request do
       end
     end
 
-    let(:phone) { Phone.create!(number: "1234567890") }
+    let(:phone) { Phone.create!(number: '1234567890') }
     let(:provider) { Provider.create!(call_ratio: 30, url: 'https://example.com/provider1') }
 
-    context "when no message_id is provided" do
+    context 'when no message_id is provided' do
       let(:message_id) { nil }
-      let(:status) { "delivered" }
-      let(:expected_error_message) { "Message is required" }
+      let(:status) { 'delivered' }
+      let(:expected_error_message) { 'Message is required' }
 
-      it_behaves_like "a 400 response"
+      it_behaves_like 'a 400 response'
     end
 
-    context "when no status is provided" do
-      let(:message_id) { "test message id" }
+    context 'when no status is provided' do
+      let(:message_id) { 'test message id' }
       let(:status) { nil }
-      let(:expected_error_message) { "Status is required" }
+      let(:expected_error_message) { 'Status is required' }
 
-      it_behaves_like "a 400 response"
+      it_behaves_like 'a 400 response'
     end
 
-    context "when a Message record with the specified message_id does not exist" do
-      let(:message_id) { "test message id" }
-      let(:status) { "delivered" }
+    context 'when a Message record with the specified message_id does not exist' do
+      let(:message_id) { 'test message id' }
+      let(:status) { 'delivered' }
 
-      it_behaves_like "a 404 response"
+      it_behaves_like 'a 404 response'
     end
 
-    context "when a Message record with the specified message_id exists" do
-      let(:message_id) { "test message id" }
+    context 'when a Message record with the specified message_id exists' do
+      let(:message_id) { 'test message id' }
       let!(:message) { Message.create!(message_id:, phone:, provider:, state:) }
 
-      context "when the message is in a sending state" do
-        let(:state) { "sending" }
+      context 'when the message is in a sending state' do
+        let(:state) { 'sending' }
 
         context "when an 'delivered' status is provided" do
-          let(:status) { "delivered" }
+          let(:status) { 'delivered' }
           let(:expected_state) { status }
 
-          it_behaves_like "a 200 response"
+          it_behaves_like 'a 200 response'
         end
 
         context "when an 'failed' status is provided" do
-          let(:status) { "failed" }
+          let(:status) { 'failed' }
           let(:expected_state) { status }
 
-          it_behaves_like "a 200 response"
+          it_behaves_like 'a 200 response'
         end
 
         context "when an 'invalid' status is provided" do
-          let(:status) { "invalid" }
-          let(:expected_state) { "blacklisted" }
+          let(:status) { 'invalid' }
+          let(:expected_state) { 'blacklisted' }
 
-          it "marks the phone associated with the message as blacklisted" do
+          it 'marks the phone associated with the message as blacklisted' do
             expect { subject }.to change { message.reload.phone.blacklist }.from(false).to(true)
           end
 
-          it_behaves_like "a 200 response"
+          it_behaves_like 'a 200 response'
         end
 
-        context "when any other status is provided" do
-          let(:status) { "unknown" }
-          let(:expected_error_message) { "Status has an invalid value" }
+        context 'when any other status is provided' do
+          let(:status) { 'unknown' }
+          let(:expected_error_message) { 'Status has an unsupported value' }
 
           it 'does not update the message' do
             expect { subject }.not_to change { message.reload.attributes }
           end
 
-          it_behaves_like "a 400 response"
+          it_behaves_like 'a 400 response'
         end
       end
 
-      context "when the message is not in a sending state" do
-        let(:state) { "failed" }
-        let(:status) { "delivered" }
-        let(:expected_error_message) { "Message is not in a sending state" }
+      context 'when the message is not in a sending state' do
+        let(:state) { 'failed' }
+        let(:status) { 'delivered' }
+        let(:expected_error_message) { 'Message is not in a sending state' }
 
-        it_behaves_like "a 400 response"
+        it_behaves_like 'a 400 response'
       end
     end
   end
