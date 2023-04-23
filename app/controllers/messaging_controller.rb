@@ -7,12 +7,8 @@ class MessagingController < ApplicationController
       message: params[:message]
     )
 
-    if outcome.valid?
-      render json: { message: 'Message successfully created' }, status: outcome.response_status
-    else
-      render json: { error_message: outcome.errors.full_messages.to_sentence },
-             status: outcome.response_status
-    end
+    message = outcome.valid? ? 'Message successfully created' : outcome.errors.full_messages.to_sentence
+    render json: { message: }, status: outcome.response_status
   end
 
   def update
@@ -21,12 +17,8 @@ class MessagingController < ApplicationController
       status: params[:status]
     )
 
-    if outcome.valid?
-      render json: { message: 'Message successfully updated' }, status: outcome.response_status
-    else
-      render json: { error_message: outcome.errors.full_messages.to_sentence },
-             status: outcome.response_status
-    end
+    message = outcome.valid? ? 'Message successfully updated' : outcome.errors.full_messages.to_sentence
+    render json: { message: }, status: outcome.response_status
   end
 
   def index; end
