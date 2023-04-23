@@ -18,9 +18,7 @@ class Message < ApplicationRecord
     state :sending, :delivered, :failed, :blacklisted
 
     event :send_text do
-      before do
-        self.message_id = provider.send_text_message(self)
-      end
+      before { self.message_id = provider.send_text_message(self) }
 
       transitions from: :pending, to: :sending
     end
@@ -34,6 +32,8 @@ class Message < ApplicationRecord
     end
 
     event :mark_blacklisted do
+      before { phone.update!(blacklist: true) }
+
       transitions from: :sending, to: :blacklisted
     end
   end

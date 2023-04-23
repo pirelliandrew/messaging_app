@@ -5,12 +5,6 @@ module Providers
     array :failed_providers, default: []
 
     def execute
-      select_provider_by_call_ratio
-    end
-
-    private
-
-    def select_provider_by_call_ratio
       providers = Provider.where.not(id: failed_providers.pluck(:id))
       total_call_count = providers.sum(&:call_count)
       total_call_count = 1 if total_call_count.zero?

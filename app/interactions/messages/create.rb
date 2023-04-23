@@ -3,22 +3,20 @@
 module Messages
   class Create < ActiveInteraction::Base
     string :phone_number, :message
-    integer :response_status, default: 400
 
-    attr_accessor :response_status
+    attr_reader :response_status
 
-    validates :phone_number, :message,
-              presence: true
+    set_callback :filter, :before, -> { @response_status = 400 }
+
+    validates :phone_number, :message, presence: true
 
     def execute
-      # 1. Retrieve or create Phone record for given phone number
       phone = Phone.find_by(number: phone_number) || compose(Phones::Create, phone_number:)
 
       return if errors.present?
 
-      # 3. Add error and return 403 if phone number is blacklisted
       if phone.blacklisted?
-        response_status = 403
+        @response_status = 403
         errors.add(:phone_number, 'has been blacklisted')
         return
       end
@@ -26,18 +24,18 @@ module Messages
       message_attempt = send_message_with_retry(phone)
 
       unless message_attempt.sending?
-        response_status = 503
+        @response_status = 503
         errors.add(:all_messaging_providers, 'are currently unavailable')
         return
       end
 
-      response_status = 201
+      @response_status = 201
+      message_attempt
     end
 
     private
 
     def send_message_with_retry(phone)
-      # 10. Create Message record for given Phone with pending status and message id from response
       message_attempt = Message.new(phone:)
       message_attempt.text = message
       provider_count = Provider.count

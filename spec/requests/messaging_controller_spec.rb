@@ -6,8 +6,8 @@ RSpec.describe 'MessagingControllers', type: :request do
   describe 'POST /send_message' do
     subject { post '/send_message', params: { phone_number:, message: } }
 
-    let!(:provider_1) { Provider.create(call_ratio: 30, url: 'https://example.com/provider1') }
-    let!(:provider_2) { Provider.create(call_ratio: 70, url: 'https://example.com/provider2') }
+    let!(:provider_1) { Provider.create!(call_ratio: 30, url: 'https://example.com/provider1') }
+    let!(:provider_2) { Provider.create!(call_ratio: 70, url: 'https://example.com/provider2') }
     let(:provider_response) do
       double(
         HTTParty::Response,
@@ -82,7 +82,7 @@ RSpec.describe 'MessagingControllers', type: :request do
       it 'returns a 403 response with a descriptive error message' do
         subject
 
-        expect(response).to have_http_status(400)
+        expect(response).to have_http_status(403)
         expect(response.body).to include('Phone number has been blacklisted')
       end
     end
@@ -111,7 +111,7 @@ RSpec.describe 'MessagingControllers', type: :request do
       it 'returns a 503 response with a descriptive error message' do
         subject
 
-        expect(response).to have_http_status(400)
+        expect(response).to have_http_status(503)
         expect(response.body).to include('All messaging providers are currently unavailable')
       end
     end
@@ -157,17 +157,15 @@ RSpec.describe 'MessagingControllers', type: :request do
       end
 
       context 'when a Phone record with the specified phone number exists' do
-        let!(:phone) { Phone.create(number: phone_number) }
+        let!(:phone) { Phone.create!(number: phone_number) }
 
         context 'when the phone_number is blacklisted' do
-          before { phone.update(blacklist: true) }
+          before { phone.update!(blacklist: true) }
 
           it_behaves_like 'a 403 response'
         end
 
         context 'when the phone_number is not blacklisted' do
-          before { Phone.create(number: phone_number, blacklist: false) }
-
           context 'when all the providers are up' do
             let(:expected_provider_urls) { ['https://example.com/provider2'] }
             let(:expected_provider) { provider_2 }
@@ -242,6 +240,123 @@ RSpec.describe 'MessagingControllers', type: :request do
 
           expect(provider_call_count).to eq(3)
         end
+      end
+    end
+  end
+
+  describe 'POST /delivery_status' do
+    subject { post '/delivery_status', params: { message_id:, status: } }
+
+    shared_examples "a 200 response" do
+      it "updates the status of the message" do
+        expect { subject }
+          .to change { message.reload.state }
+          .from("sending")
+          .to(expected_state)
+      end
+
+      it 'returns a 200 response with a descriptive message' do
+        subject
+
+        expect(response).to have_http_status(200)
+        expect(response.body).to include("Message successfully updated")
+      end
+    end
+
+    shared_examples 'a 400 response' do
+      it 'returns a 400 response with a descriptive error message' do
+        subject
+
+        expect(response).to have_http_status(400)
+        expect(response.body).to include(expected_error_message)
+      end
+    end
+
+    shared_examples 'a 404 response' do
+      it 'returns a 404 response with a descriptive error message' do
+        subject
+
+        expect(response).to have_http_status(404)
+        expect(response.body).to include('Message with the provided message_id does not exist')
+      end
+    end
+
+    let(:phone) { Phone.create!(number: "1234567890") }
+    let(:provider) { Provider.create!(call_ratio: 30, url: 'https://example.com/provider1') }
+
+    context "when no message_id is provided" do
+      let(:message_id) { nil }
+      let(:status) { "delivered" }
+      let(:expected_error_message) { "Message is required" }
+
+      it_behaves_like "a 400 response"
+    end
+
+    context "when no status is provided" do
+      let(:message_id) { "test message id" }
+      let(:status) { nil }
+      let(:expected_error_message) { "Status is required" }
+
+      it_behaves_like "a 400 response"
+    end
+
+    context "when a Message record with the specified message_id does not exist" do
+      let(:message_id) { "test message id" }
+      let(:status) { "delivered" }
+
+      it_behaves_like "a 404 response"
+    end
+
+    context "when a Message record with the specified message_id exists" do
+      let(:message_id) { "test message id" }
+      let!(:message) { Message.create!(message_id:, phone:, provider:, state:) }
+
+      context "when the message is in a sending state" do
+        let(:state) { "sending" }
+
+        context "when an 'delivered' status is provided" do
+          let(:status) { "delivered" }
+          let(:expected_state) { status }
+
+          it_behaves_like "a 200 response"
+        end
+
+        context "when an 'failed' status is provided" do
+          let(:status) { "failed" }
+          let(:expected_state) { status }
+
+          it_behaves_like "a 200 response"
+        end
+
+        context "when an 'invalid' status is provided" do
+          let(:status) { "invalid" }
+          let(:expected_state) { "blacklisted" }
+
+          it "marks the phone associated with the message as blacklisted" do
+            expect { subject }.to change { message.reload.phone.blacklist }.from(false).to(true)
+          end
+
+          it_behaves_like "a 200 response"
+        end
+
+        context "when any other status is provided" do
+          let(:status) { "unknown" }
+          let(:expected_error_message) { "Status has an invalid value" }
+
+          it 'does not update the message' do
+            expect { subject }.not_to change { message.reload.attributes }
+          end
+
+          it_behaves_like "a 400 response"
+        end
+      end
+
+      context "when the message is not in a sending state" do
+        let(:state) { "failed" }
+        let(:status) { "delivered" }
+        let(:expected_error_message) { "Message is not in a sending state" }
+
+        it_behaves_like "a 400 response"
       end
     end
   end
