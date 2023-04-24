@@ -92,4 +92,6 @@ group :test do
   gem 'webdrivers'
   # For testing model validations
   gem 'shoulda-matchers'
+  # For freezing time in specs
+  gem 'timecop'
 end

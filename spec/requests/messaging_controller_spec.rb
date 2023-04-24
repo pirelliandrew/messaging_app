@@ -11,7 +11,6 @@ RSpec.describe 'MessagingControllers', type: :request do
     let(:provider_response) do
       double(
         HTTParty::Response,
-        ok?: true,
         parsed_response: { 'message_id' => 'test message id' }
       )
     end
@@ -42,7 +41,8 @@ RSpec.describe 'MessagingControllers', type: :request do
               to_number: '1234567890',
               message: 'test message text',
               callback_url: 'https://example.com/delivery_status'
-            }.to_json
+            }.to_json,
+            raise_errors: true
           )
         end
       end
@@ -99,7 +99,8 @@ RSpec.describe 'MessagingControllers', type: :request do
               to_number: '1234567890',
               message: 'test message text',
               callback_url: 'https://example.com/delivery_status'
-            }.to_json
+            }.to_json,
+            raise_errors: true
           )
         end
       end
@@ -176,15 +177,11 @@ RSpec.describe 'MessagingControllers', type: :request do
           context 'when the first selected provider is down' do
             let(:expected_provider_urls) { %w[https://example.com/provider1 https://example.com/provider2] }
             let(:expected_provider) { provider_1 }
-            let(:provider_error_response) { double(HTTParty::Response, ok?: false) }
 
             before do
               allow(HTTParty)
                 .to receive(:post)
-                .with(provider_2.url, headers: anything, body: anything)
-                .and_return(provider_error_response)
-              allow(provider_error_response)
-                .to receive(:raise_error)
+                .with(provider_2.url, headers: anything, body: anything, raise_errors: anything)
                 .and_raise(HTTParty::ResponseError, 'Internal server error')
             end
 
@@ -192,15 +189,8 @@ RSpec.describe 'MessagingControllers', type: :request do
           end
 
           context 'when all the providers are down' do
-            let(:provider_error_response) { double(HTTParty::Response, ok?: false) }
-
             before do
-              allow(HTTParty)
-                .to receive(:post)
-                .and_return(provider_error_response)
-              allow(provider_error_response)
-                .to receive(:raise_error)
-                .and_raise(HTTParty::ResponseError, 'Internal server error')
+              allow(HTTParty).to receive(:post).and_raise(HTTParty::ResponseError, 'Internal server error')
             end
 
             it_behaves_like 'a 503 response'
@@ -215,7 +205,6 @@ RSpec.describe 'MessagingControllers', type: :request do
             provider_call_count += 1 if url == provider_1.url
             double(
               HTTParty::Response,
-              ok?: true,
               parsed_response: { 'message_id' => SecureRandom.uuid }
             )
           end
@@ -231,7 +220,6 @@ RSpec.describe 'MessagingControllers', type: :request do
             provider_call_count += 1 if url == provider_1.url
             double(
               HTTParty::Response,
-              ok?: true,
               parsed_response: { 'message_id' => SecureRandom.uuid }
             )
           end
@@ -282,7 +270,7 @@ RSpec.describe 'MessagingControllers', type: :request do
     end
 
     let(:phone) { Phone.create!(number: '1234567890') }
-    let(:provider) { Provider.create!(call_ratio: 30, url: 'https://example.com/provider1') }
+    let(:provider) { Provider.create!(call_ratio: 100, url: 'https://example.com/provider1') }
 
     context 'when no message_id is provided' do
       let(:message_id) { nil }
@@ -357,6 +345,89 @@ RSpec.describe 'MessagingControllers', type: :request do
         let(:expected_error_message) { 'Message is not in a sending state' }
 
         it_behaves_like 'a 400 response'
+      end
+    end
+  end
+
+  describe 'GET /list_messages' do
+    subject { get '/list_messages', params: { phone_number: } }
+
+    let(:provider) { Provider.create!(call_ratio: 100, url: 'https://example.com/provider1') }
+    let(:phone_1) { Phone.create!(number: '1234567890') }
+    let(:phone_2) { Phone.create!(number: '0987654321') }
+    let(:phone_number) { nil }
+
+    around { |example| Timecop.freeze(DateTime.new(2023, 4, 23)) { example.run } }
+
+    it 'has a form' do
+      subject
+
+      expect(response.body.squish)
+        .to include('<form action="/list_messages" accept-charset="UTF-8" method="get"> <div> '\
+                    '<label for="phone_number">Phone Number</label> <input type="text" name="phone_number" '\
+                    'id="phone_number" value="" required="required" /> <input type="submit" name="commit" '\
+                    'value="Search" data-disable-with="Search" /> </div> </form>')
+    end
+
+    context 'when there are messages in the database' do
+      let!(:messages) do
+        [
+          Message.create!(phone: phone_1, provider:, message_id: 'one'),
+          Message.create!(phone: phone_2, provider:, message_id: 'two')
+        ]
+      end
+
+      context 'when no messages exist for the given phone number' do
+        let(:phone_number) { '1111111111' }
+
+        it 'displays a message stating the no messages exist for the given phone number' do
+          subject
+
+          expect(response.body).to include('No messages have been sent with the provided phone number.')
+        end
+      end
+
+      context 'when messages exist for the given phone number' do
+        let(:phone_number) { '1234567890' }
+
+        it 'displays the messages for the given phone number in table format' do
+          subject
+
+          html = response.body.squish
+          expect(html).to include('<table> <thead> <tr> <th>Message ID</th> <th>Message Status</th>'\
+                                  ' <th>Phone Number</th> <th>Provider Name</th> <th>Created At</th> '\
+                                  '<th>Updated At</th> </tr> </thead>')
+          expect(html).to include('<tbody> <tr> <td>one</td> <td>pending</td> <td>1234567890</td> '\
+                                  '<td>https://example.com/provider1</td> <td>2023-04-23 00:00:00 UTC</td> '\
+                                  '<td>2023-04-23 00:00:00 UTC</td> </tr> </tbody>')
+        end
+      end
+
+      context 'when no phone number is provided' do
+        let(:phone_number) { nil }
+
+        it 'displays all messages in table format' do
+          subject
+
+          html = response.body.squish
+          expect(html).to include('<table> <thead> <tr> <th>Message ID</th> <th>Message Status</th>'\
+                                  ' <th>Phone Number</th> <th>Provider Name</th> <th>Created At</th> '\
+                                  '<th>Updated At</th> </tr> </thead>')
+          expect(html)
+            .to include('<tbody> <tr> <td>one</td> <td>pending</td> <td>1234567890</td> '\
+                        '<td>https://example.com/provider1</td> <td>2023-04-23 00:00:00 UTC</td> '\
+                        '<td>2023-04-23 00:00:00 UTC</td> </tr> <tr> <td>two</td> <td>pending</td> '\
+                        '<td>0987654321</td> <td>https://example.com/provider1</td> '\
+                        '<td>2023-04-23 00:00:00 UTC</td> <td>2023-04-23 00:00:00 UTC</td> </tr> </tbody>')
+        end
+      end
+    end
+
+    context 'when there are no messages in the database' do
+      it 'displays a message stating that no messages exist in the database' do
+        subject
+
+        expect(response.body).to include('No messages have been sent yet.')
       end
     end
   end

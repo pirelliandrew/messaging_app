@@ -23,5 +23,7 @@ class MessagingController < ApplicationController
     render json: { message: }, status: outcome.response_status
   end
 
-  def index; end
+  def index
+    @messages = Messages::List.run!(phone_number: params[:phone_number])
+  end
 end
