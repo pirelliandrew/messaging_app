@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class MessagingController < ApplicationController
+  skip_before_action :verify_authenticity_token
+
   def create
     outcome = Messages::Create.run(
       phone_number: params[:phone_number],

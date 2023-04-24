@@ -19,10 +19,9 @@ class Provider < ApplicationRecord
         message: message.text,
         # TODO: Update this to use ngrok subdomain
         callback_url: 'https://example.com/delivery_status'
-      }.to_json
+      }.to_json,
+      raise_errors: true
     )
-
-    response.raise_error unless response.ok?
 
     response.parsed_response['message_id']
   end

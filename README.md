@@ -63,9 +63,7 @@ Content-Type: application/json
 
 #### Sample curl command
 ```bash
-curl -X POST -H "Content-Type: application/json" -d '{"phone_number":
-"1234567890", "message": "This is a sample message"}'
-"http://localhost:3000/send_message"
+curl -X POST -H "Content-Type: application/json" -d '{"phone_number": "1234567890", "message": "This is a sample message"}' "http://localhost:3000/send_message"
 ```
 
 #### Sample Response:
@@ -90,9 +88,7 @@ Content-Type: application/json
 
 #### Sample curl command
 ```bash
-curl -X POST -H "Content-Type: application/json" -d '{"status":
-"delivered", "message_id": "19ee63f9-4447-4a8b-9981-a9cf9b631a16"}'
-"http://localhost:3000/delivery_status"
+curl -X POST -H "Content-Type: application/json" -d '{"status": "delivered", "message_id": "19ee63f9-4447-4a8b-9981-a9cf9b631a16"}' "http://localhost:3000/delivery_status"
 ```
 
 #### Response:
@@ -121,23 +117,42 @@ bundle exec rails c
 
 ### Sending a message (equivalent to POST /send_message):
 ```ruby
-
+Messages::Create.run!(phone_number: '1234567890', message: 'This is a sample message')
+=> 
+<Message:0x0000000109638fd0
+id: 1,
+message_id: "19ee63f9-4447-4a8b-9981-a9cf9b631a16",
+state: "sending",
+phone_id: 1,
+provider_id: 1,
+created_at: Mon, 24 Apr 2023 00:27:03.585610000 UTC +00:00,
+updated_at: Mon, 24 Apr 2023 00:27:03.585610000 UTC +00:00>
 ```
 
 ### Updating the status of a message (equivalent to POST /delivery_status):
 ```ruby
-
+Messages::Update.run!(message_id: "19ee63f9-4447-4a8b-9981-a9cf9b631a16", status: "delivered")
+=>
+<Message:0x000000010967c320
+id: 1,
+message_id: "19ee63f9-4447-4a8b-9981-a9cf9b631a16",
+state: "delivered",
+phone_id: 1,
+provider_id: 1,
+created_at: Mon, 24 Apr 2023 00:27:03.585610000 UTC +00:00,
+updated_at: Mon, 24 Apr 2023 00:31:23.258819000 UTC +00:00>
 ```
 
 ### Listing message details by phone number (equivalent to GET /list_messages):
 ```ruby
-
+# TODO
 ```
 
 ### Error handling
 By using `run!`, exceptions with descriptive error messages will automatically be raised for invalid inputs:
 ```ruby
-
+Messages::Create.run!(phone_number: '1234567890', message: 'This is a sample message')
+=> Phone number has been blacklisted (ActiveInteraction::InvalidInteractionError)
 ```
 
 ## Design
@@ -201,4 +216,4 @@ The current implementation for this endpoint currently has one bug which may bec
 Other than this, the current implementation satisfies the requirements as specified.
 
 ### GET /list_messages
- 
+TODO
