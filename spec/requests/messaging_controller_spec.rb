@@ -15,7 +15,10 @@ RSpec.describe 'MessagingControllers', type: :request do
       )
     end
 
-    before { allow(HTTParty).to receive(:post).and_return(provider_response) }
+    before do
+      ENV['NGROK_URL']= 'https://example.com'
+      allow(HTTParty).to receive(:post).and_return(provider_response)
+    end
 
     shared_examples 'a request that fails validations' do
       it 'does not send a request to any provider' do
