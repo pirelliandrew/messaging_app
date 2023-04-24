@@ -17,8 +17,7 @@ class Provider < ApplicationRecord
       body: {
         to_number: message.phone.number,
         message: message.text,
-        # TODO: Update this to use ngrok subdomain
-        callback_url: 'https://example.com/delivery_status'
+        callback_url: "#{ENV['NGROK_URL']}/delivery_status"
       }.to_json,
       raise_errors: true
     )

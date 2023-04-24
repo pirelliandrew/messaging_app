@@ -23,9 +23,11 @@ bundle exec rails db:setup
 ## Running the application
 ```bash
 # In first terminal
-bundle exec rails s
+ngrok http 3000
 # In second terminal
-TODO: ngrok command
+NGROK_URL=<ngrok url from first terminal> bundle exec rails s
+# For example NGROK_URL=https://abcd-1234.ngrok-free.app bundle exec rails s
+# Accepted ngrok hosts are *.ngrok.io and *.ngrok-free.app
 ```
 
 Application is accessible at http://localhost:3000/.
