@@ -368,7 +368,7 @@ RSpec.describe 'MessagingControllers', type: :request do
       expect(response.body.squish)
         .to include('<form action="/list_messages" accept-charset="UTF-8" method="get"> <div> '\
                     '<label for="phone_number">Phone Number</label> <input type="text" name="phone_number" '\
-                    'id="phone_number" value="" required="required" /> <input type="submit" name="commit" '\
+                    'id="phone_number" /> <input type="submit" name="commit" '\
                     'value="Search" data-disable-with="Search" /> </div> </form>')
     end
 
